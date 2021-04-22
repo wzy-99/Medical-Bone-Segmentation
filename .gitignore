@@ -1,0 +1,12 @@
+/__pycache__
+/.idea
+/.store
+/.vscode
+/output
+/result
+/result_train
+/result_valid
+/test
+/train
+/valid
+gray.jpg
