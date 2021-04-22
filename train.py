@@ -12,7 +12,8 @@ def loss(x, label):
     # loss = 0.5 * loss * loss
     # loss = paddle.mean(loss)
     # return loss
-    loss = paddle.nn.functional.binary_cross_entropy(x, label)
+    one_hot = paddle.nn.functional.one_hot(label, num_classes=config.CLASS_NUMBER)
+    loss = paddle.nn.functional.binary_cross_entropy(x, one_hot)
     return loss
 
 
@@ -21,13 +22,13 @@ def train():
     model = paddle.Model(net)
     # model.load('output/unet1')
     callback = paddle.callbacks.LRScheduler(by_step=True, by_epoch=False)
-    train_dataset = TrainDataset('./train', class_number=config.CLASS_NUMBER)
-    valid_dataset = ValidDataset('./valid', class_number=config.CLASS_NUMBER)
-    scheduler = paddle.optimizer.lr.LinearWarmup(learning_rate=0.01, warmup_steps=100, start_lr=0, end_lr=0.01)
+    train_dataset = TrainDataset('./train')
+    valid_dataset = ValidDataset('./valid')
+    scheduler = paddle.optimizer.lr.LinearWarmup(learning_rate=0.01, warmup_steps=100, start_lr=0, end_lr=0.01, verbose=True)
     # scheduler = paddle.optimizer.lr.CosineAnnealingDecay(learning_rate=0.5, T_max=200, verbose=True)
     optimizer = paddle.optimizer.SGD(learning_rate=scheduler, parameters=model.parameters())
     model.prepare(optimizer, loss)
-    model.fit(train_dataset, valid_dataset, batch_size=1, epochs=1, callbacks=callback, eval_freq=1)
+    model.fit(train_dataset, valid_dataset, batch_size=1, epochs=30, callbacks=callback, eval_freq=1, log_freq=1)
     # model.save('output/unet1')
 
 

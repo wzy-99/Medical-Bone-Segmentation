@@ -118,6 +118,8 @@ class Unet(fluid.dygraph.Layer):
 
         x = paddle.nn.functional.softmax(x, axis=1)
 
+        x = paddle.transpose(x, [0, 2, 3, 1])
+
         return x
 
 

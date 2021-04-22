@@ -13,7 +13,7 @@ LABEL2ID = {
 }
 
 ID2LABEL = {
-    0 : 'null'
+    0 : 'null',
     1 : 'k',
     2 : '1',
     3 : '2',

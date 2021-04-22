@@ -19,11 +19,12 @@ def predict():
         path = testdataset.indexs[index]
         img = cv2.imread(path)
         
-        res = np.reshape(out, (config.CLASS_NUMBER, 224, 224))
+        res = np.reshape(out, (224, 224, config.CLASS_NUMBER))
         res = res * 254
         res = res.astype(np.uint8)
 
-        for ch, r in enumerate(res):
+        for ch in range(config.CLASS_NUMBER):
+            r = res[:, :, ch]
             lab = config.ID2LABEL[ch]
             cv2.imwrite('result/' + str(index) + 'result' + lab + '.jpg', r)
         
