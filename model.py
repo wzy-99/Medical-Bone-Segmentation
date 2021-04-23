@@ -36,7 +36,7 @@ class ConvBlock(fluid.dygraph.Layer):
         x = self.drop_out(x)
         return x
 
-# 就是Unet
+# 用普通方法实现Unet
 class SimpleUnet(fluid.dygraph.Layer):
     def __init__(self, class_number, in_dim=3, act='relu', p=0.5):
         super(SimpleUnet, self).__init__()
@@ -81,7 +81,7 @@ class SimpleUnet(fluid.dygraph.Layer):
 
         return out
 
-# 与SimpleUnet一样，不过写法更紧凑
+# 用更紧凑的写法实现Unet
 class Unet(fluid.dygraph.Layer):
     def __init__(self, class_number, depth=5, in_dim=3, act='relu', p=0.5):
         super(Unet, self).__init__()
@@ -125,7 +125,7 @@ class Unet(fluid.dygraph.Layer):
 
 if __name__ == "__main__":
     with fluid.dygraph.guard():
-        network = SimpleUnet(class_number=1) # depth = 5
-        paddle.summary(network, (1, 3, 224, 224))
+        # network = SimpleUnet(class_number=1) # depth = 5
+        # paddle.summary(network, (1, 3, 224, 224))
         network = Unet(class_number=1, depth=6)
         paddle.summary(network, (1, 3, 224, 224))

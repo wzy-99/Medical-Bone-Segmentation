@@ -4,12 +4,13 @@ import json
 import numpy as np
 import paddle.fluid as fluid
 from paddle.io import Dataset
-from paddle.vision.transforms import Compose, Resize, Transpose, Normalize
+from paddle.vision.transforms import Compose, Resize, Transpose, Normalize, ColorJitter
 import config
 
 
 transform = Compose([
     Resize(size=(config.INPUT_SIZE, config.INPUT_SIZE)),
+    ColorJitter(brightness=0.1, contrast=0.3, saturation=0.3, hue=0.1),
     Normalize(mean=[127.5, 127.5, 127.5], std=[127.5, 127.5, 127.5], data_format='HWC'), # 标准化
     Transpose(), # 原始数据形状维度是HWC格式，经过Transpose，转换为CHW格式
 ])
