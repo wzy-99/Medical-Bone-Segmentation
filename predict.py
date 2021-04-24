@@ -20,13 +20,13 @@ def predict():
         img = cv2.imread(path)
         
         # 输出热力图
-        res = np.reshape(out, (224, 224, config.CLASS_NUMBER))
+        res = np.reshape(out, (config.LABLE_SIZE, config.LABLE_SIZE, config.CLASS_NUMBER))
         lab = (np.argmax(res, axis=-1) / config.CLASS_NUMBER * 255).astype(np.uint8)
         color = cv2.applyColorMap(lab, cv2.COLORMAP_JET)
         cv2.imwrite('result/' + str(index) + 'result.jpg', color)
 
         # 输出每张图
-        # res = np.reshape(out, (224, 224, config.CLASS_NUMBER))
+        # res = np.reshape(out, (config.LABLE_SIZE, config.LABLE_SIZE, config.CLASS_NUMBER))
         # res = res * 254
         # res = res.astype(np.uint8)
         # for ch in range(config.CLASS_NUMBER):

@@ -127,5 +127,5 @@ if __name__ == "__main__":
     with fluid.dygraph.guard():
         # network = SimpleUnet(class_number=1) # depth = 5
         # paddle.summary(network, (1, 3, 224, 224))
-        network = Unet(class_number=1, depth=6)
-        paddle.summary(network, (1, 3, 224, 224))
+        network = Unet(class_number=1, depth=5)
+        paddle.summary(network, (1, 3, 512, 512))

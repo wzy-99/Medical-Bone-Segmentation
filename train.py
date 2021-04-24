@@ -29,13 +29,13 @@ def loss(x, label):
     # return loss
     # 只统计分错的目标类的带权的交叉熵损失函数
     weight = paddle.to_tensor(config.WEIGHT)
-    one_hot = paddle.nn.functional.one_hot(label, num_classes=config.CLASS_NUMBER)
-    p = paddle.sum(x * one_hot, axis=-1)
-    lab = paddle.argmax(x, axis=-1)
-    mask = (lab != label)
-    weight_map = paddle.mm(one_hot, weight)
-    loss = -paddle.log(p + 1e-6) * weight_map * mask
-    loss = paddle.mean(loss)
+    one_hot = paddle.nn.functional.one_hot(label, num_classes=config.CLASS_NUMBER) # 将lable转换为onehot
+    p = paddle.sum(x * one_hot, axis=-1) # one_hot与x点成，将每个像素目标类的概率保留，其他类的概率过滤，并reduce
+    lab = paddle.argmax(x, axis=-1) # 获得每个像素的分类结果
+    mask = (lab != label) # 获得分类错误的点
+    weight_map = paddle.mm(one_hot, weight) # 根据每个像素的类别，计算其权重
+    loss = -paddle.log(p + 1e-6) * weight_map * mask # 计算分类错误的像素的带权交叉熵
+    loss = paddle.mean(loss) # 求平均
     return loss
 
 
