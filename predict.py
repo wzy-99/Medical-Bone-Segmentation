@@ -11,7 +11,7 @@ def predict():
     testdataset = TestDataset('test')
     net = Unet(config.CLASS_NUMBER)
     model = paddle.Model(net)
-    model.load('output/unet2')
+    model.load('output/unet1')
     model.prepare()
     outs = model.predict(testdataset)
     outs = outs[0]
@@ -26,13 +26,13 @@ def predict():
         cv2.imwrite('result/' + str(index) + 'result.jpg', color)
 
         # 输出每张图
-        # res = np.reshape(out, (config.LABLE_SIZE, config.LABLE_SIZE, config.CLASS_NUMBER))
-        # res = res * 254
-        # res = res.astype(np.uint8)
-        # for ch in range(config.CLASS_NUMBER):
-        #     r = res[:, :, ch]
-        #     lab = config.ID2LABEL[ch]
-        #     cv2.imwrite('result/' + str(index) + 'result' + lab + '.jpg', r)
+        res = np.reshape(out, (config.LABLE_SIZE, config.LABLE_SIZE, config.CLASS_NUMBER))
+        res = res * 254
+        res = res.astype(np.uint8)
+        for ch in range(config.CLASS_NUMBER):
+            r = res[:, :, ch]
+            lab = config.ID2LABEL[ch]
+            cv2.imwrite('result/' + str(index) + 'result' + lab + '.jpg', r)
         
         cv2.imwrite('result/' + str(index) + 'origin.jpg', img)
 

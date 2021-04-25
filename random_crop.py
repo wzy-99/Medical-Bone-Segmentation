@@ -49,6 +49,38 @@ class RandomCrop:
      
         return left, top, w, h
 
+    def complex_random_crop(self, image, box, lable_box=None, label_image=None):
+        if len(image.shape == 3):
+            height, width, channel = image.shape
+        else:
+            height, width = image.shape
+        
+        if self.safe:
+            left, top, w, h = self.random_region_safe(width, height, box)
+        else:
+            left, top, w, h = self.random_region(width, height)
+        region = (left, top, w, h)
+
+        if len(image.shape == 3):
+            cut = image[top:top + h, left:left + w, :]
+        else:
+            cut = image[top:top + h, left:left + w]
+
+        if lable_box is not None:
+            x0, y0, x1, y1 = lable_box
+            x0, x1 = x0 - left, y1 - left
+            y0, y1 = y0 - top, y1 - top
+            label = x0, y0, x1, y1
+            return cut, label, region
+        elif label_image is not None:
+            if len(label_image.shape) == 3:
+                label = label_image[:, top:top + h, left:left + w]
+            else:
+                label = label_image[top:top + h, left:left + w]
+            return cut, label, region
+        else:
+            return cut, region
+
     def random_crop(self, image, box):
         if len(image.shape == 3):
             height, width, channel = image.shape
@@ -59,9 +91,11 @@ class RandomCrop:
             left, top, w, h = self.random_region_safe(width, height, box)
         else:
             left, top, w, h = self.random_region(width, height)
-        
+        region = (left, top, w, h)
+
         if len(image.shape == 3):
             cut = image[top:top + h, left:left + w, :]
         else:
             cut = image[top:top + h, left:left + w]
-        return  cut, (left, top, w, h)        
+
+        return cut, region

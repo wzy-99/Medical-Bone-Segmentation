@@ -6,7 +6,6 @@ import paddle.fluid as fluid
 from paddle.io import Dataset
 from paddle.vision.transforms import Compose, Resize, Transpose, Normalize, ColorJitter
 import config
-from random_crop import RandomCrop
 
 
 transform = Compose([
@@ -15,9 +14,6 @@ transform = Compose([
     Normalize(mean=[127.5, 127.5, 127.5], std=[127.5, 127.5, 127.5], data_format='HWC'), 
     Transpose(),
 ])
-
-
-croper = RandomCrop(min_ratio=config.MIN_CROP_RATIO, max_ratio=config.MAX_CROP_RATIO)
 
 
 def read_json(path):
@@ -50,17 +46,18 @@ class TrainDataset(Dataset):
     
     def __getitem__(self, idx):
         image = cv2.imread(self.sample[idx]['image_path'])
-        h, w, c = image.shape
+        height, weight, c = image.shape
         label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
         for label in self.sample[idx]['labels']:
             lab = label[0]
             points = label[1]
-            points[:, 0] = points[:, 0] / w * config.LABLE_SIZE
-            points[:, 1] = points[:, 1] / h * config.LABLE_SIZE
+            points[:, 0] = points[:, 0] / weight * config.LABLE_SIZE
+            points[:, 1] = points[:, 1] / height * config.LABLE_SIZE
             points = np.around(points)
             points = points.astype(np.int32)
             label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(lab))
             # cv2.imwrite('gray.jpg', (label_image * 255).astype(np.uint8))
+
         image = transform(image).astype("float32")
         ret = image, label_image
         return ret
