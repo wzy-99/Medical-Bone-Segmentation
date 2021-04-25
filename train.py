@@ -49,7 +49,6 @@ def train():
     model = paddle.Model(net)
     # model.load('output/unet1')
     callback0 = paddle.callbacks.LRScheduler(by_step=True, by_epoch=False)
-    callback1 = StepTest()
     train_dataset = TrainDataset('./train')
     valid_dataset = ValidDataset('./valid')
     scheduler = paddle.optimizer.lr.LinearWarmup(learning_rate=0.001, warmup_steps=len(train_dataset) * 3, start_lr=0, end_lr=0.001, verbose=True)
@@ -57,7 +56,7 @@ def train():
     # optimizer = paddle.optimizer.SGD(learning_rate=scheduler, parameters=model.parameters())
     optimizer = paddle.optimizer.Adam(learning_rate=scheduler, parameters=model.parameters())
     model.prepare(optimizer, loss)
-    model.fit(train_dataset, valid_dataset, batch_size=1, epochs=3, callbacks=[callback0, callback1], eval_freq=1, log_freq=1, shuffle=True)
+    model.fit(train_dataset, valid_dataset, batch_size=1, epochs=3, callbacks=[callback0], eval_freq=1, log_freq=1, shuffle=True)
     model.save('output/unet1')
 
 

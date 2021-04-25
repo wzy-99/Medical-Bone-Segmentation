@@ -2,10 +2,12 @@ import os
 import cv2
 import json
 import numpy as np
+import paddle
 import paddle.fluid as fluid
 from paddle.io import Dataset
 from paddle.vision.transforms import Compose, Resize, Transpose, Normalize, ColorJitter
 import config
+import random
 
 
 transform = Compose([
@@ -14,6 +16,41 @@ transform = Compose([
     Normalize(mean=[127.5, 127.5, 127.5], std=[127.5, 127.5, 127.5], data_format='HWC'), 
     Transpose(),
 ])
+
+
+def random_region(width, height, box):
+    x0, y0, x1, y1 = [int(i) for i in box]
+    bw, bh = x1 - x0, y1 - y0
+
+    w_min_ratio = max(config.W_MIN_RATIO, bw / width)
+    if w_min_ratio > config.W_MAX_RATIO:
+        print('MAX_RATIO is too low')
+        w_max_ratio = 1.0
+    else:
+        w_max_ratio = config.W_MAX_RATIO
+
+    h_min_ratio = max(config.H_MIN_RATIO, bh / height)
+    if w_min_ratio > config.H_MAX_RATIO:
+        print('MAX_RATIO is too low')
+        w_max_ratio = 1.0
+    else:
+        h_max_ratio = config.H_MAX_RATIO
+
+    w_ratio = random.random() * (w_max_ratio - w_min_ratio) + w_min_ratio
+    h_ratio = random.random() * (h_max_ratio - h_min_ratio) + h_min_ratio
+
+    w = int(width * w_ratio)
+    h = int(height * h_ratio)
+
+    lmin = max(0, x1 - w)
+    lmax = min(width - 1 - w, x0)
+    tmin = max(0, y1 - h)
+    tmax = min(height -1 - h, y0)
+
+    left = random.randint(lmin, lmax)
+    top = random.randint(tmin, tmax)
+    
+    return left, top, w, h
 
 
 def read_json(path):
@@ -33,6 +70,8 @@ class TrainDataset(Dataset):
                 image_path = os.path.join(self.root_path, file_name)
                 if os.path.exists(json_path):
                     js = read_json(json_path)
+                    width = js['imageWidth']
+                    height = js['imageHeight']
                     shapes = js['shapes']
                     labels = []
                     for shape in shapes:
@@ -42,24 +81,38 @@ class TrainDataset(Dataset):
                             points = shape['points']
                             points = np.array(points)
                             labels.append([lab, points])
-                    self.sample.append({'image_path': image_path, 'labels': labels})
-    
+                    px = [lab[1][0] for lab in labels]
+                    py = [lab[1][1] for lab in labels]
+                    px = np.array(px)
+                    py = np.array(py)
+                    bx0 = px.min()
+                    bx1 = px.max()
+                    by0 = py.min()
+                    by1 = py.max()
+                    bx0 = max(0, bx0 - config.MARGIN)
+                    by0 = max(0, by0 - config.MARGIN)
+                    bx1 = min(width - 1, bx1 + config.MARGIN)
+                    by1 = min(height - 1, by1 + config.MARGIN)
+                    self.sample.append({'image_path': image_path, 'labels': labels, 'box': [bx0, by0, bx1, by1]})
+                        
     def __getitem__(self, idx):
         image = cv2.imread(self.sample[idx]['image_path'])
-        height, weight, c = image.shape
+        height, width, channel = image.shape
+        nx0, ny0, nw, nh = random_region(width, height, self.sample[idx]['box'])
+        nx1 = nx0 + nw
+        ny1 = ny0 + nh
+        dat = image[ny0:ny1, nx0:nx1, :]
         label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
         for label in self.sample[idx]['labels']:
             lab = label[0]
             points = label[1]
-            points[:, 0] = points[:, 0] / weight * config.LABLE_SIZE
-            points[:, 1] = points[:, 1] / height * config.LABLE_SIZE
+            points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
+            points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
             points = np.around(points)
             points = points.astype(np.int32)
             label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(lab))
-            # cv2.imwrite('gray.jpg', (label_image * 255).astype(np.uint8))
-
-        image = transform(image).astype("float32")
-        ret = image, label_image
+        dat = transform(dat).astype("float32")
+        ret = dat, label_image
         return ret
     
     def __len__(self):
@@ -78,6 +131,8 @@ class ValidDataset(Dataset):
                 image_path = os.path.join(self.root_path, file_name)
                 if os.path.exists(json_path):
                     js = read_json(json_path)
+                    width = js['imageWidth']
+                    height = js['imageHeight']
                     shapes = js['shapes']
                     labels = []
                     for shape in shapes:
@@ -87,28 +142,42 @@ class ValidDataset(Dataset):
                             points = shape['points']
                             points = np.array(points)
                             labels.append([lab, points])
-                    self.sample.append({'image_path': image_path, 'labels': labels})
-    
+                    px = [lab[1][0] for lab in labels]
+                    py = [lab[1][1] for lab in labels]
+                    px = np.array(px)
+                    py = np.array(py)
+                    bx0 = px.min()
+                    bx1 = px.max()
+                    by0 = py.min()
+                    by1 = py.max()
+                    bx0 = max(0, bx0 - config.MARGIN)
+                    by0 = max(0, by0 - config.MARGIN)
+                    bx1 = min(width - 1, bx1 + config.MARGIN)
+                    by1 = min(height - 1, by1 + config.MARGIN)
+                    self.sample.append({'image_path': image_path, 'labels': labels, 'box': [bx0, by0, bx1, by1]})
+                        
     def __getitem__(self, idx):
         image = cv2.imread(self.sample[idx]['image_path'])
-        h, w, c = image.shape
+        height, width, channel = image.shape
+        nx0, ny0, nw, nh = random_region(width, height, self.sample[idx]['box'])
+        nx1 = nx0 + nw
+        ny1 = ny0 + nh
+        dat = image[ny0:ny1, nx0:nx1, :]
         label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
         for label in self.sample[idx]['labels']:
             lab = label[0]
             points = label[1]
-            points[:, 0] = points[:, 0] / w * config.LABLE_SIZE
-            points[:, 1] = points[:, 1] / h * config.LABLE_SIZE
+            points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
+            points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
             points = np.around(points)
             points = points.astype(np.int32)
             label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(lab))
-            # cv2.imwrite('gray.jpg', (label_image * 255).astype(np.uint8))
-        image = transform(image).astype("float32")
-        ret = image, label_image
+        dat = transform(dat).astype("float32")
+        ret = dat, label_image
         return ret
     
     def __len__(self):
         return len(self.sample)
-
 
 class TestDataset(Dataset):
     def __init__(self, image_path):
@@ -129,3 +198,13 @@ class TestDataset(Dataset):
 
     def __len__(self):
         return len(self.sample)
+
+
+if __name__ == '__main__':
+    paddle.seed(1)
+    random.seed(1)
+    ds = TrainDataset('train')
+    for x, label in ds:
+        cv2.imshow('x', (x[0] + 0.5))
+        cv2.imshow('l', (label / config.CLASS_NUMBER * 255).astype('uint8'))
+        cv2.waitKey(0)
