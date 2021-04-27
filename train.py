@@ -5,8 +5,9 @@ import paddle.fluid as fluid
 import config
 from dataset import TrainDataset, ValidDataset
 from model import Unet
-from callback import StepTest
+# from callback import StepTest
 import random
+
 
 def loss(x, label):
     # 平方差损失函数
@@ -51,7 +52,7 @@ def train():
     callback0 = paddle.callbacks.LRScheduler(by_step=True, by_epoch=False)
     train_dataset = TrainDataset('./train')
     valid_dataset = ValidDataset('./valid')
-    scheduler = paddle.optimizer.lr.LinearWarmup(learning_rate=0.001, warmup_steps=len(train_dataset) * 3, start_lr=0, end_lr=0.001, verbose=True)
+    scheduler = paddle.optimizer.lr.LinearWarmup(learning_rate=0.001, warmup_steps=len(train_dataset) // 1 * 3, start_lr=0, end_lr=0.001, verbose=True)
     # scheduler = paddle.optimizer.lr.CosineAnnealingDecay(learning_rate=0.5, T_max=200, verbose=True)
     # optimizer = paddle.optimizer.SGD(learning_rate=scheduler, parameters=model.parameters())
     optimizer = paddle.optimizer.Adam(learning_rate=scheduler, parameters=model.parameters())

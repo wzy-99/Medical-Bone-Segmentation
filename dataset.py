@@ -204,7 +204,12 @@ if __name__ == '__main__':
     paddle.seed(1)
     random.seed(1)
     ds = TrainDataset('train')
-    for x, label in ds:
+    cv2.namedWindow('o', cv2.WINDOW_NORMAL)
+    for i, dat in enumerate(ds):
+        x, label = dat
+        print(ds.sample[i]['image_path'])
+        img = cv2.imread(ds.sample[i]['image_path'].replace('train', 'result_train'))
+        cv2.imshow('o', img)
         cv2.imshow('x', (x[0] + 0.5))
         cv2.imshow('l', (label / config.CLASS_NUMBER * 255).astype('uint8'))
         cv2.waitKey(0)
