@@ -15,16 +15,22 @@ def loss(x, label):
     # loss = 0.5 * loss * loss
     # loss = paddle.mean(loss)
     # return loss
-    # 交叉熵损失函数
-    one_hot = paddle.nn.functional.one_hot(label, num_classes=config.CLASS_NUMBER)
-    loss = paddle.nn.functional.binary_cross_entropy(x, one_hot)
-    return loss
-    # 带权交叉熵损失函数
-    # weight = None
-    # # weight = paddle.to_tensor(config.WEIGHT)
-    # one_hot = paddle.nn.functional.one_hot(label, num_classes=config.CLASS_NUMBER)
-    # loss = paddle.nn.functional.binary_cross_entropy(x, one_hot, weight=weight)
+    # 带权平方差损失函数
+    # loss = x - label
+    # loss = 0.5 * loss * loss
+    # weight = label * config.LABEL_WEIGHT
+    # loss = loss * weight
+    # loss = paddle.mean(loss)
     # return loss
+    # 交叉熵损失函数
+    # one_hot = paddle.nn.functional.one_hot(label, num_classes=config.CLASS_NUMBER)
+    # loss = paddle.nn.functional.binary_cross_entropy(x, one_hot)
+    # return loss
+    # 带权交叉熵损失函数
+    weight = paddle.to_tensor(config.WEIGHT)
+    one_hot = paddle.nn.functional.one_hot(label, num_classes=config.CLASS_NUMBER)
+    loss = paddle.nn.functional.binary_cross_entropy(x, one_hot, weight=weight)
+    return loss
     # 只统计目标类的带权交叉熵损失函数
     # weight = paddle.to_tensor(config.WEIGHT)
     # one_hot = paddle.nn.functional.one_hot(label, num_classes=config.CLASS_NUMBER)
@@ -52,7 +58,7 @@ def train():
     callback0 = paddle.callbacks.LRScheduler(by_step=True, by_epoch=False)
     train_dataset = TrainDataset('./train')
     valid_dataset = ValidDataset('./valid')
-    scheduler = paddle.optimizer.lr.LinearWarmup(learning_rate=0.001, warmup_steps=len(train_dataset) // 1 * 3, start_lr=0, end_lr=0.001, verbose=True)
+    scheduler = paddle.optimizer.lr.LinearWarmup(learning_rate=0.01, warmup_steps=len(train_dataset) // 1 * 3, start_lr=0, end_lr=0.01, verbose=True)
     # scheduler = paddle.optimizer.lr.CosineAnnealingDecay(learning_rate=0.5, T_max=200, verbose=True)
     # optimizer = paddle.optimizer.SGD(learning_rate=scheduler, parameters=model.parameters())
     optimizer = paddle.optimizer.Adam(learning_rate=scheduler, parameters=model.parameters())

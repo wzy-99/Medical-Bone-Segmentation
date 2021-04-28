@@ -102,16 +102,28 @@ class TrainDataset(Dataset):
         nx1 = nx0 + nw
         ny1 = ny0 + nh
         dat = image[ny0:ny1, nx0:nx1, :]
-        label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
-        for label in self.sample[idx]['labels']:
-            lab = label[0]
-            points = label[1]
-            points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
-            points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
-            points = np.around(points)
-            points = points.astype(np.int32)
-            label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(lab))
-        dat = transform(dat).astype("float32")
+        if config.USE_ONE_LABEL is False:
+            label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
+            for label in self.sample[idx]['labels']:
+                lab = label[0]
+                points = label[1]
+                points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
+                points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
+                points = np.around(points)
+                points = points.astype(np.int32)
+                label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(lab))
+            dat = transform(dat).astype("float32")
+        else:
+            label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
+            for label in self.sample[idx]['labels']:
+                lab = label[0]
+                points = label[1]
+                points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
+                points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
+                points = np.around(points)
+                points = points.astype(np.int32)
+                label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(1))
+            dat = transform(dat).astype("float32")
         ret = dat, label_image
         return ret
     
@@ -163,21 +175,34 @@ class ValidDataset(Dataset):
         nx1 = nx0 + nw
         ny1 = ny0 + nh
         dat = image[ny0:ny1, nx0:nx1, :]
-        label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
-        for label in self.sample[idx]['labels']:
-            lab = label[0]
-            points = label[1]
-            points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
-            points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
-            points = np.around(points)
-            points = points.astype(np.int32)
-            label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(lab))
-        dat = transform(dat).astype("float32")
+        if config.USE_ONE_LABEL is False:
+            label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
+            for label in self.sample[idx]['labels']:
+                lab = label[0]
+                points = label[1]
+                points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
+                points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
+                points = np.around(points)
+                points = points.astype(np.int32)
+                label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(lab))
+            dat = transform(dat).astype("float32")
+        else:
+            label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
+            for label in self.sample[idx]['labels']:
+                lab = label[0]
+                points = label[1]
+                points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
+                points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
+                points = np.around(points)
+                points = points.astype(np.int32)
+                label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(1))
+            dat = transform(dat).astype("float32")
         ret = dat, label_image
         return ret
     
     def __len__(self):
         return len(self.sample)
+
 
 class TestDataset(Dataset):
     def __init__(self, image_path):
@@ -187,15 +212,71 @@ class TestDataset(Dataset):
 
         for file_name in os.listdir(self.image_path):
             if file_name.endswith('.jpg'):
-                self.sample.append(os.path.join(self.image_path, file_name))
+                self.sample.append({'image_path': os.path.join(self.image_path, file_name)})
         
     def __getitem__(self, idx):
         self.indexs.append(self.sample[idx])
-        image = cv2.imread(self.sample[idx])
+        image = cv2.imread(self.sample[idx]['image_path'])
         image = transform(image).astype("float32")
         ret = image
         return ret
 
+    def __len__(self):
+        return len(self.sample)
+
+
+class TestDataset2(Dataset):
+    def __init__(self, root_path):
+        self.root_path = root_path
+        self.sample = []
+        self.indexs = []
+        for file_name in os.listdir(self.root_path):
+            if file_name.endswith('.jpg'):
+                name = file_name.split('.jpg')[0]
+                json_name = name + '.json'
+                json_path = os.path.join(self.root_path, json_name)
+                image_path = os.path.join(self.root_path, file_name)
+                if os.path.exists(json_path):
+                    js = read_json(json_path)
+                    width = js['imageWidth']
+                    height = js['imageHeight']
+                    shapes = js['shapes']
+                    labels = []
+                    for shape in shapes:
+                        lab = config.LABEL2ID[shape['label']]
+                        shape_type = shape['shape_type']
+                        if shape_type == 'polygon':
+                            points = shape['points']
+                            points = np.array(points)
+                            labels.append([lab, points])
+                    px = [lab[1][0] for lab in labels]
+                    py = [lab[1][1] for lab in labels]
+                    px = np.array(px)
+                    py = np.array(py)
+                    bx0 = px.min()
+                    bx1 = px.max()
+                    by0 = py.min()
+                    by1 = py.max()
+                    bx0 = max(0, bx0 - config.MARGIN)
+                    by0 = max(0, by0 - config.MARGIN)
+                    bx1 = min(width - 1, bx1 + config.MARGIN)
+                    by1 = min(height - 1, by1 + config.MARGIN)
+                    self.sample.append({'image_path': image_path, 'labels': labels, 'box': [bx0, by0, bx1, by1]})
+                        
+    def __getitem__(self, idx):
+        image = cv2.imread(self.sample[idx]['image_path'])
+        height, width, channel = image.shape
+        nx0, ny0, nw, nh = random_region(width, height, self.sample[idx]['box'])
+        nx1 = nx0 + nw
+        ny1 = ny0 + nh
+        dat = image[ny0:ny1, nx0:nx1, :]
+        dat = transform(dat).astype("float32")
+        ind = self.sample[idx].copy()
+        ind['region'] = [nx0, ny0, nx1, ny1]
+        self.indexs.append(ind)
+        ret = dat
+        return ret
+    
     def __len__(self):
         return len(self.sample)
 
