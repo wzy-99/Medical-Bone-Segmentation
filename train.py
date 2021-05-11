@@ -5,7 +5,6 @@ import paddle.fluid as fluid
 import config
 from dataset import TrainDataset, ValidDataset
 from model import Unet
-# from callback import StepTest
 import random
 
 
@@ -64,7 +63,7 @@ def train():
     optimizer = paddle.optimizer.Adam(learning_rate=scheduler, parameters=model.parameters())
     model.prepare(optimizer, loss)
     model.fit(train_dataset, valid_dataset, batch_size=1, epochs=3, callbacks=[callback0], eval_freq=1, log_freq=1, shuffle=True)
-    model.save('output/unet1')
+    # model.save('output/unet1')
 
 
 if __name__ == "__main__":

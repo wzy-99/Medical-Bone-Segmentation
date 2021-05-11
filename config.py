@@ -1,8 +1,9 @@
-CLASS_NUMBER = 7 + 1
 
 USE_ONE_LABEL = False
 
 if USE_ONE_LABEL:
+
+    CLASS_NUMBER = 7 + 1
 
     WEIGHT = [
         1.0,   # null
@@ -39,6 +40,8 @@ if USE_ONE_LABEL:
 
 else:
 
+    CLASS_NUMBER = 1 + 1
+
     WEIGHT = [
         1.0,   # null
         10000.0,  # k
@@ -47,12 +50,20 @@ else:
     LABEL2ID = {
         'null': 0,
         'K': 1,
+        '1': 1,
+        '2': 1,
+        '3': 1,
+        '4': 1,
+        '5': 1,
+        '6': 1,
     }
 
     ID2LABEL = {
         0: 'null',
-        1: 'k',
+        1: 'bone',
     }
+
+
 
 INPUT_SIZE = 512
 LABLE_SIZE = 512
@@ -63,5 +74,3 @@ H_MIN_RATIO = 0.4
 H_MAX_RATIO = 0.6
 
 MARGIN = 100
-
-LABEL_WEIGHT = 10000.0

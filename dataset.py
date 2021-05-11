@@ -3,7 +3,6 @@ import cv2
 import json
 import numpy as np
 import paddle
-import paddle.fluid as fluid
 from paddle.io import Dataset
 from paddle.vision.transforms import Compose, Resize, Transpose, Normalize, ColorJitter
 import config
@@ -102,28 +101,16 @@ class TrainDataset(Dataset):
         nx1 = nx0 + nw
         ny1 = ny0 + nh
         dat = image[ny0:ny1, nx0:nx1, :]
-        if config.USE_ONE_LABEL is False:
-            label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
-            for label in self.sample[idx]['labels']:
-                lab = label[0]
-                points = label[1]
-                points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
-                points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
-                points = np.around(points)
-                points = points.astype(np.int32)
-                label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(lab))
-            dat = transform(dat).astype("float32")
-        else:
-            label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
-            for label in self.sample[idx]['labels']:
-                lab = label[0]
-                points = label[1]
-                points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
-                points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
-                points = np.around(points)
-                points = points.astype(np.int32)
-                label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(1))
-            dat = transform(dat).astype("float32")
+        label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
+        for label in self.sample[idx]['labels']:
+            lab = label[0]
+            points = label[1].copy()
+            points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
+            points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
+            points = np.around(points)
+            points = points.astype(np.int32)
+            label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(lab))
+        dat = transform(dat).astype("float32")
         ret = dat, label_image
         return ret
     
@@ -175,28 +162,16 @@ class ValidDataset(Dataset):
         nx1 = nx0 + nw
         ny1 = ny0 + nh
         dat = image[ny0:ny1, nx0:nx1, :]
-        if config.USE_ONE_LABEL is False:
-            label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
-            for label in self.sample[idx]['labels']:
-                lab = label[0]
-                points = label[1]
-                points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
-                points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
-                points = np.around(points)
-                points = points.astype(np.int32)
-                label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(lab))
-            dat = transform(dat).astype("float32")
-        else:
-            label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
-            for label in self.sample[idx]['labels']:
-                lab = label[0]
-                points = label[1]
-                points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
-                points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
-                points = np.around(points)
-                points = points.astype(np.int32)
-                label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(1))
-            dat = transform(dat).astype("float32")
+        label_image = np.zeros(shape=(config.LABLE_SIZE, config.LABLE_SIZE), dtype='int32')
+        for label in self.sample[idx]['labels']:
+            lab = label[0]
+            points = label[1].copy()
+            points[:, 0] = (points[:, 0] - nx0) / nw * config.LABLE_SIZE
+            points[:, 1] = (points[:, 1] - ny0) / nh * config.LABLE_SIZE
+            points = np.around(points)
+            points = points.astype(np.int32)
+            label_image[:, :] = cv2.fillPoly(label_image[:, :], pts=[points], color=int(lab))
+        dat = transform(dat).astype("float32")
         ret = dat, label_image
         return ret
     
@@ -286,11 +261,13 @@ if __name__ == '__main__':
     random.seed(1)
     ds = TrainDataset('train')
     cv2.namedWindow('o', cv2.WINDOW_NORMAL)
-    for i, dat in enumerate(ds):
-        x, label = dat
-        print(ds.sample[i]['image_path'])
-        img = cv2.imread(ds.sample[i]['image_path'].replace('train', 'result_train'))
-        cv2.imshow('o', img)
-        cv2.imshow('x', (x[0] + 0.5))
-        cv2.imshow('l', (label / config.CLASS_NUMBER * 255).astype('uint8'))
-        cv2.waitKey(0)
+    while True:
+        for i, dat in enumerate(ds):
+            x, label = dat
+            print(label.sum())
+            print(ds.sample[i]['image_path'])
+            img = cv2.imread(ds.sample[i]['image_path'].replace('train', 'result_train'))
+            cv2.imshow('o', img)
+            cv2.imshow('x', (x[0] + 0.5))
+            cv2.imshow('l', (label / config.CLASS_NUMBER * 255).astype('uint8'))
+            cv2.waitKey(0)
